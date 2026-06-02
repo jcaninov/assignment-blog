@@ -12,7 +12,12 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Logging.AddConsole();
 
 // Register Domain & Infrastructure
-builder.Services.AddScoped<IPostRepository, PostRepository>();
+// Register Domain & Infrastructure
+builder.Services.AddTransient<System.Data.IDbConnection>(_ =>
+    new Npgsql.NpgsqlConnection(builder.Configuration.GetConnectionString("Default") ?? Environment.GetEnvironmentVariable("CONNECTION_STRING") ?? string.Empty));
+
+builder.Services.AddScoped<Blog.Domain.Repositories.IPostRepository, Blog.Infrastructure.Persistence.PostRepositoryDapper>();
+builder.Services.AddScoped<Blog.Domain.Repositories.IAuthorRepository, Blog.Infrastructure.Persistence.AuthorRepositoryDapper>();
 
 // Register Application CQRS
 builder.Services.AddScoped<ICommandDispatcher, CommandDispatcher>();

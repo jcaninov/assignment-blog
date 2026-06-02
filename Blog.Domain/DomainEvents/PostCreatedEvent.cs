@@ -1,6 +1,6 @@
 using Blog.Domain.SharedKernel;
 
-namespace Blog.Domain.Aggregates.Post;
+namespace Blog.Domain.DomainEvents;
 
 public sealed class PostCreatedEvent : IDomainEvent
 {

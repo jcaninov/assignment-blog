@@ -1,3 +1,4 @@
+using Blog.Domain.DomainEvents;
 using Blog.Domain.SharedKernel;
 
 namespace Blog.Domain.Aggregates.Post;
@@ -31,6 +32,20 @@ public sealed class Post : Entity
             title,
             content,
             DateTime.UtcNow));
+
+        return post;
+    }
+
+    public static Post Rehydrate(Guid id, string title, string content, DateTime createdAtUtc)
+    {
+        var post = new Post
+        {
+            Id = id,
+            PostId = PostId.From(id),
+            Title = new PostTitle(title),
+            Content = new PostContent(content),
+            CreatedAtUtc = createdAtUtc
+        };
 
         return post;
     }
