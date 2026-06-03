@@ -21,13 +21,13 @@ public static class PostEndpoints
 
     private static async Task<IResult> CreatePost(
         CreatePostRequest request,
-        ICommandDispatcher commandDispatcher,
+        ICommandHandler<CreatePostCommand, PostDto> commandHandler,
         CancellationToken cancellationToken)
     {
         try
         {
             var command = new CreatePostCommand(request.Title, request.Content);
-            var result = await commandDispatcher.DispatchAsync<PostDto>(command, cancellationToken);
+            var result = await commandHandler.HandleAsync(command, cancellationToken);
             return Results.Created($"/posts/{result.Id}", result);
         }
         catch (ArgumentException ex)
@@ -37,11 +37,11 @@ public static class PostEndpoints
     }
 
     private static async Task<IResult> GetAllPosts(
-        IQueryDispatcher queryDispatcher,
+        IQueryHandler<GetAllPostsQuery, IReadOnlyList<PostDto>> queryHandler,
         CancellationToken cancellationToken)
     {
         var query = new GetAllPostsQuery();
-        var result = await queryDispatcher.DispatchAsync(query, cancellationToken);
+        var result = await queryHandler.HandleAsync(query, cancellationToken);
         return Results.Ok(result);
     }
 }
