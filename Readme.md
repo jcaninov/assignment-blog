@@ -24,6 +24,8 @@ docker compose down -v
 
 ### 2. Configure the API
 
+Set the environment variable `ASPNETCORE_ENVIRONMENT=Development` to use the development configuration.
+
 The default connection string for local development is in `Blog.API/appsettings.Development.json`.
 
 
