@@ -9,6 +9,7 @@ internal static class PostDtoMapper
         new(
             post.PostId.Value,
             post.Title.Value,
+            post.Description.Value,
             post.Content.Value,
             post.CreatedAtUtc,
             post.AuthorId.Value,
@@ -19,8 +20,7 @@ internal static class PostDtoMapper
             author.AuthorId.Value,
             author.Name,
             author.Surname,
-            author.CreatedAtUtc,
-            author.UpdatedAtUtc);
+            author.CreatedAtUtc);
 
     public static PostDto ToDto(PostWithAuthor postWithAuthor) =>
         ToDto(postWithAuthor.Post, ToAuthorDto(postWithAuthor.Author));

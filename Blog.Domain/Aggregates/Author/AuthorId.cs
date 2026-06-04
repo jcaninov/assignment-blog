@@ -1,6 +1,6 @@
-namespace Blog.Domain.Aggregates.Author;
-
 using Blog.Domain.SharedKernel;
+
+namespace Blog.Domain.Aggregates.Author;
 
 public sealed class AuthorId : ValueObject
 {

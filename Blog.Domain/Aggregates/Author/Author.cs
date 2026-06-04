@@ -8,7 +8,6 @@ public sealed class Author : Entity
     public string Name { get; private set; } = null!;
     public string Surname { get; private set; } = null!;
     public DateTime CreatedAtUtc { get; private set; }
-    public DateTime UpdatedAtUtc { get; private set; }
 
     private Author() { }
 
@@ -21,14 +20,13 @@ public sealed class Author : Entity
             AuthorId = id,
             Name = name,
             Surname = surname,
-            CreatedAtUtc = DateTime.UtcNow,
-            UpdatedAtUtc = DateTime.UtcNow
+            CreatedAtUtc = DateTime.UtcNow
         };
 
         return author;
     }
 
-    public static Author Rehydrate(Guid id, string name, string surname, DateTime createdAtUtc, DateTime updatedAtUtc)
+    public static Author Rehydrate(Guid id, string name, string surname, DateTime createdAtUtc)
     {
         var a = new Author
         {
@@ -36,8 +34,7 @@ public sealed class Author : Entity
             AuthorId = AuthorId.From(id),
             Name = name,
             Surname = surname,
-            CreatedAtUtc = createdAtUtc,
-            UpdatedAtUtc = updatedAtUtc
+            CreatedAtUtc = createdAtUtc
         };
 
         return a;

@@ -1,19 +1,21 @@
+using System.Text.Json;
+using Blog.Domain.Aggregates.Post;
 using Blog.Domain.SharedKernel;
 
 namespace Blog.Domain.DomainEvents;
 
-public sealed class PostCreatedEvent : IDomainEvent
+public sealed record PostCreatedEvent : IDomainEvent
 {
+    public string AggregateType => "blog.post";
+    public string EventType => "blog.post.created";
     public Guid AggregateId { get; }
-    public DateTime OccurredAt { get; }
-    public string Title { get; }
-    public string Content { get; }
+    public DateTimeOffset OccurredAt { get; }
+    public string Payload { get; }
 
-    public PostCreatedEvent(Guid aggregateId, string title, string content, DateTime occurredAt)
+    public PostCreatedEvent(Post post, DateTimeOffset occurredAt)
     {
-        AggregateId = aggregateId;
-        Title = title;
-        Content = content;
+        AggregateId = post.PostId.Value;
         OccurredAt = occurredAt;
+        Payload = JsonSerializer.Serialize(post);
     }
 }

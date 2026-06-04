@@ -1,3 +1,5 @@
+using Blog.API.Contracts;
+using Blog.API.Serialization;
 using Blog.Application.Abstractions;
 using Blog.Application.Commands.CreatePost;
 using Blog.Application.DTOs;
@@ -11,42 +13,74 @@ public static class PostEndpoints
     {
         app.MapPost("/posts", CreatePost)
             .WithName("CreatePost")
-            .Produces<PostDto>(StatusCodes.Status201Created)
-            .Produces(StatusCodes.Status400BadRequest);
+            .Accepts<CreatePostRequest>(JsonApiContentSerializer.MediaType)
+            .Produces<PostDto>(StatusCodes.Status201Created, contentType: JsonApiContentSerializer.MediaType)
+            .Produces(StatusCodes.Status400BadRequest, contentType: JsonApiContentSerializer.MediaType)
+            .Produces(StatusCodes.Status415UnsupportedMediaType, contentType: JsonApiContentSerializer.MediaType);
 
         app.MapGet("/posts/{id:guid}", GetPostById)
             .WithName("GetPostById")
-            .Produces<PostDto>(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status404NotFound);
+            .Produces<PostDto>(StatusCodes.Status200OK, contentType: JsonApiContentSerializer.MediaType)
+            .Produces(StatusCodes.Status404NotFound, contentType: JsonApiContentSerializer.MediaType)
+            .Produces(StatusCodes.Status406NotAcceptable, contentType: JsonApiContentSerializer.MediaType);
     }
 
     private static async Task<IResult> CreatePost(
-        CreatePostRequest request,
+        HttpContext http,
+        IApiContentSerializerResolver resolver,
         ICommandHandler<CreatePostCommand, PostDto> commandHandler,
         CancellationToken cancellationToken)
     {
+        IApiContentSerializer requestSerializer;
         try
         {
-            var command = new CreatePostCommand(request.AuthorId, request.Title, request.Content);
+            requestSerializer = resolver.ResolveForRequest(http.Request);
+        }
+        catch (UnsupportedMediaTypeException ex)
+        {
+            return ApiResults.UnsupportedMediaType(http, resolver, ex.MediaType);
+        }
+
+        var request = await requestSerializer.DeserializeAsync<CreatePostRequest>(http.Request.Body, cancellationToken);
+
+        if (request is null)
+            return ApiResults.BadRequest(http, resolver, new { error = "Invalid request body." });
+
+        try
+        {
+            var command = new CreatePostCommand(request.AuthorId, request.Title, request.Description, request.Content);
             var result = await commandHandler.HandleAsync(command, cancellationToken);
-            return Results.Created($"/posts/{result.Id}", result);
+            return ApiResults.Created(http, resolver, $"/posts/{result.Id}", result);
         }
         catch (ArgumentException ex)
         {
-            return Results.BadRequest(new { error = ex.Message });
+            return ApiResults.BadRequest(http, resolver, new { error = ex.Message });
+        }
+        catch (NotAcceptableException ex)
+        {
+            return ApiResults.NotAcceptable(http, resolver, ex.AcceptHeader);
         }
     }
 
     private static async Task<IResult> GetPostById(
+        HttpContext http,
         Guid id,
         bool includeAuthor,
+        IApiContentSerializerResolver resolver,
         IQueryHandler<GetPostByIdQuery, PostDto?> queryHandler,
         CancellationToken cancellationToken)
     {
-        var query = new GetPostByIdQuery(id, includeAuthor);
-        var result = await queryHandler.HandleAsync(query, cancellationToken);
-        return result is null ? Results.NotFound() : Results.Ok(result);
+        try
+        {
+            var query = new GetPostByIdQuery(id, includeAuthor);
+            var result = await queryHandler.HandleAsync(query, cancellationToken);
+            return result is null
+                ? ApiResults.NotFound(http, resolver)
+                : ApiResults.Ok(http, resolver, result);
+        }
+        catch (NotAcceptableException ex)
+        {
+            return ApiResults.NotAcceptable(http, resolver, ex.AcceptHeader);
+        }
     }
 }
-
-public record CreatePostRequest(Guid AuthorId, string Title, string Content);
