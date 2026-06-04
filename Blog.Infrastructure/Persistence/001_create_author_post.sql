@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS author (
 
 CREATE TABLE IF NOT EXISTS post (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    author_id UUID NULL REFERENCES author(id) ON DELETE SET NULL,
+    author_id UUID NOT NULL REFERENCES author(id),
     title TEXT NOT NULL,
     description TEXT,
     content TEXT,

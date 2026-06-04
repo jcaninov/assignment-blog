@@ -1,3 +1,4 @@
+using Blog.Domain.Aggregates.Author;
 using Blog.Domain.Aggregates.Post;
 using Blog.Domain.Repositories;
 
@@ -6,6 +7,12 @@ namespace Blog.Infrastructure.Persistence;
 public sealed class PostRepository : IPostRepository
 {
     private readonly List<Post> _posts = new List<Post>();
+    private readonly IAuthorRepository _authorRepository;
+
+    public PostRepository(IAuthorRepository authorRepository)
+    {
+        _authorRepository = authorRepository;
+    }
 
     public Task AddAsync(Post post, CancellationToken cancellationToken = default)
     {
@@ -19,9 +26,15 @@ public sealed class PostRepository : IPostRepository
         return Task.FromResult(post);
     }
 
-    public Task<IReadOnlyList<Post>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PostWithAuthor?> GetByIdWithAuthorAsync(PostId id, CancellationToken cancellationToken = default)
     {
-        return Task.FromResult<IReadOnlyList<Post>>(_posts.AsReadOnly());
+        var post = _posts.FirstOrDefault(p => p.PostId == id);
+        if (post is null) return null;
+
+        var author = await _authorRepository.GetByIdAsync(post.AuthorId, cancellationToken);
+        if (author is null) return null;
+
+        return new PostWithAuthor(post, author);
     }
 
     public Task UpdateAsync(Post post, CancellationToken cancellationToken = default)

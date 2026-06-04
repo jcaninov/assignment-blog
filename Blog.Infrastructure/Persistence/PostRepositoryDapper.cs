@@ -1,5 +1,6 @@
 using System.Data;
 using Dapper;
+using Blog.Domain.Aggregates.Author;
 using Blog.Domain.Aggregates.Post;
 using Blog.Domain.Repositories;
 
@@ -18,7 +19,7 @@ VALUES (@Id, @AuthorId, @Title, @Description, @Content, @CreatedAt, @UpdatedAt)"
 
         await _db.ExecuteAsync(new CommandDefinition(sql, new {
             Id = post.PostId.Value,
-            AuthorId = (Guid?)null,
+            AuthorId = post.AuthorId.Value,
             Title = post.Title.Value,
             Description = (string?)null,
             Content = post.Content.Value,
@@ -29,18 +30,45 @@ VALUES (@Id, @AuthorId, @Title, @Description, @Content, @CreatedAt, @UpdatedAt)"
 
     public async Task<Post?> GetByIdAsync(PostId id, CancellationToken cancellationToken = default)
     {
-        const string sql = @"SELECT id, title, description, content, ""createdAt"", ""updatedAt"" FROM post WHERE id = @Id";
-        var row = await _db.QueryFirstOrDefaultAsync(sql, new { Id = id.Value });
+        const string sql = @"SELECT id, author_id, title, content, ""createdAt"" FROM post WHERE id = @Id";
+        var row = await _db.QueryFirstOrDefaultAsync(
+            new CommandDefinition(sql, new { Id = id.Value }, cancellationToken: cancellationToken));
         if (row is null) return null;
-        return Post.Rehydrate((Guid)row.id, (string)row.title, (string)row.content, (DateTime)row.createdAt);
+        return Post.Rehydrate(
+            (Guid)row.id,
+            (Guid)row.author_id,
+            (string)row.title,
+            (string)row.content,
+            (DateTime)row.createdAt);
     }
 
-    public async Task<IReadOnlyList<Post>> GetAllAsync(CancellationToken cancellationToken = default)
+    public async Task<PostWithAuthor?> GetByIdWithAuthorAsync(PostId id, CancellationToken cancellationToken = default)
     {
-        const string sql = @"SELECT id, title, description, content, ""createdAt"", ""updatedAt"" FROM post";
-        var rows = await _db.QueryAsync(sql);
-        var list = rows.Select(r => Post.Rehydrate((Guid)r.id, (string)r.title, (string)r.content, (DateTime)r.createdAt)).ToList();
-        return list;
+        const string sql = @"SELECT p.id, p.author_id, p.title, p.content, p.""createdAt"",
+       a.id AS author_row_id, a.name, a.surname, a.""createdAt"" AS author_created_at, a.""updatedAt"" AS author_updated_at
+FROM post p
+INNER JOIN author a ON a.id = p.author_id
+WHERE p.id = @Id";
+
+        var row = await _db.QueryFirstOrDefaultAsync(
+            new CommandDefinition(sql, new { Id = id.Value }, cancellationToken: cancellationToken));
+        if (row is null) return null;
+
+        var post = Post.Rehydrate(
+            (Guid)row.id,
+            (Guid)row.author_id,
+            (string)row.title,
+            (string)row.content,
+            (DateTime)row.createdAt);
+
+        var author = Author.Rehydrate(
+            (Guid)row.author_row_id,
+            (string)row.name,
+            (string)row.surname,
+            (DateTime)row.author_created_at,
+            (DateTime)row.author_updated_at);
+
+        return new PostWithAuthor(post, author);
     }
 
     public async Task UpdateAsync(Post post, CancellationToken cancellationToken = default)

@@ -1,8 +1,9 @@
 using Blog.API;
+using Blog.API.Endpoints;
 using Blog.Application.Abstractions;
 using Blog.Application.Commands.CreatePost;
 using Blog.Application.DTOs;
-using Blog.Application.Queries.GetAllPosts;
+using Blog.Application.Queries.GetPostById;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -17,7 +18,7 @@ builder.Services.AddScoped<Blog.Domain.Repositories.IAuthorRepository, Blog.Infr
 
 // Register Command & Query Handlers
 builder.Services.AddScoped<ICommandHandler<CreatePostCommand, PostDto>, CreatePostCommandHandler>();
-builder.Services.AddScoped<IQueryHandler<GetAllPostsQuery, IReadOnlyList<PostDto>>, GetAllPostsQueryHandler>();
+builder.Services.AddScoped<IQueryHandler<GetPostByIdQuery, PostDto?>, GetPostByIdQueryHandler>();
 
 // API & Swagger
 builder.Services.AddCors(options =>
